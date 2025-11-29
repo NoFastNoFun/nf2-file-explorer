@@ -1,0 +1,24 @@
+[package]
+name = "file-explorer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = { version = "0.27", default-features = false, features = ["default_fonts", "glow"] }
+egui = "0.27"
+egui_extras = { version = "0.27", features = ["all_loaders"] }
+tokio = { version = "1", features = ["full"] }
+walkdir = "2"
+notify = "6"
+winapi = { version = "0.3", features = ["winuser", "shellapi", "shlobj", "fileapi", "winbase", "winnt", "handleapi", "processthreadsapi"] }
+mime_guess = "2"
+chrono = "0.4"
+rfd = "0.14"
+arboard = "3"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+regex = "1"
+thiserror = "1"
+image = "0.25"
+dirs = "5"
+

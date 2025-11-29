@@ -1,0 +1,54 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Application settings (optional - uncomment if you don't want to track settings)
+# settings.toml
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Test coverage
+tarpaulin-report.html
+cobertura.xml
+
+# Documentation build
+/doc/
+
+# Environment files
+.env
+.env.local
+
