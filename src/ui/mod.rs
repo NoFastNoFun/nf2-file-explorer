@@ -11,4 +11,9 @@ pub mod icons;
 pub mod preview;
 pub mod settings;
 pub mod home;
+pub mod tabs;
+pub mod multi_pane;
+pub mod json_viewer;
+pub mod hash_dialog;
+pub mod progress_dialog;
 

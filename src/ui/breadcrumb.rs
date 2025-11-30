@@ -5,7 +5,7 @@ use tokio::runtime::Runtime;
 
 pub fn render_breadcrumb(ui: &mut Ui, app: &mut AppState, rt: &Runtime) {
     ui.horizontal(|ui| {
-        let path = &app.current_path;
+        let path = &app.navigation.current_path;
         let components: Vec<PathBuf> = path.components()
             .map(|c| c.as_os_str().to_os_string().into())
             .collect();

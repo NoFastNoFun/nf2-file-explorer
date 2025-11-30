@@ -73,7 +73,9 @@ fn copy_directory_internal(
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
             if path.is_dir() {
-                let dst_subdir = dst.join(path.file_name().unwrap());
+                let file_name = path.file_name()
+                    .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Directory path has no file name"))?;
+                let dst_subdir = dst.join(file_name);
                 copy_directory_internal(&path, &dst_subdir, None).await?;
         } else {
             let metadata = entry.metadata().await?;
@@ -83,7 +85,9 @@ fn copy_directory_internal(
     }
 
     for file in files {
-        let dst_file = dst.join(file.file_name().unwrap());
+        let file_name = file.file_name()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "File path has no file name"))?;
+        let dst_file = dst.join(file_name);
         copy_file(&file, &dst_file, None).await?;
         processed += fs::metadata(&file).await?.len();
         if let Some(ref callback) = progress {
@@ -105,12 +109,19 @@ pub async fn move_directory(
     Ok(())
 }
 
-pub async fn delete_file(path: &Path) -> Result<(), io::Error> {
-    fs::remove_file(path).await
+pub async fn delete_file(path: &Path) -> Result<PathBuf, io::Error> {
+    trash::delete(path)
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to move to trash: {}", e)))?;
+    // Return original path - trash crate doesn't return the trash location
+    // For undo, we'll need to restore from the original path using platform-specific logic
+    Ok(path.to_path_buf())
 }
 
-pub async fn delete_directory(path: &Path) -> Result<(), io::Error> {
-    fs::remove_dir_all(path).await
+pub async fn delete_directory(path: &Path) -> Result<PathBuf, io::Error> {
+    trash::delete(path)
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to move to trash: {}", e)))?;
+    // Return original path - trash crate doesn't return the trash location
+    Ok(path.to_path_buf())
 }
 
 pub async fn rename_path(src: &Path, new_name: &str) -> Result<PathBuf, io::Error> {

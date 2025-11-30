@@ -1,4 +1,4 @@
-use egui::{Ui, ScrollArea, CollapsingHeader, Color32};
+use egui::{Ui, ScrollArea, CollapsingHeader};
 use std::path::{Path, PathBuf};
 use std::collections::HashSet;
 use crate::app::AppState;
@@ -32,7 +32,7 @@ impl TreeView {
 
         let path_buf = path.to_path_buf();
         let mut is_expanded = self.expanded.contains(&path_buf);
-        let is_current = app.current_path.starts_with(&path_buf) && app.current_path != path_buf;
+        let is_current = app.navigation.current_path.starts_with(&path_buf) && app.navigation.current_path != path_buf;
         
         if is_current && !is_expanded {
             is_expanded = true;
@@ -74,14 +74,21 @@ impl TreeView {
 }
 
 fn get_windows_drives() -> Vec<PathBuf> {
-    let mut drives = Vec::new();
-    for letter in b'A'..=b'Z' {
-        let drive = format!("{}:\\", letter as char);
-        let path = PathBuf::from(&drive);
-        if path.exists() {
-            drives.push(path);
+    #[cfg(windows)]
+    {
+        let mut drives = Vec::new();
+        for letter in b'A'..=b'Z' {
+            let drive = format!("{}:\\", letter as char);
+            let path = PathBuf::from(&drive);
+            if path.exists() {
+                drives.push(path);
+            }
         }
+        drives
     }
-    drives
+    #[cfg(not(windows))]
+    {
+        vec![PathBuf::from("/")]
+    }
 }
 

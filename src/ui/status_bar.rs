@@ -24,7 +24,7 @@ pub fn render_status_bar(ui: &mut Ui, app: &AppState) {
         }
 
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            ui.label(app.current_path.to_string_lossy().to_string());
+            ui.label(app.navigation.current_path.to_string_lossy().to_string());
         });
     });
 }

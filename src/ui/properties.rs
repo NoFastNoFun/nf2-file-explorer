@@ -2,11 +2,11 @@ use egui::{Context, Window};
 use crate::app::AppState;
 
 pub fn render_properties(ctx: &Context, app: &mut AppState) {
-    if !app.show_properties {
+    if !app.ui.show_properties {
         return;
     }
 
-    if let Some(ref path) = app.properties_path {
+    if let Some(ref path) = app.ui.properties_path {
         Window::new("Properties")
             .collapsible(false)
             .resizable(true)
@@ -86,13 +86,13 @@ pub fn render_properties(ctx: &Context, app: &mut AppState) {
                         ui.separator();
 
                         if ui.button("Close").clicked() {
-                            app.show_properties = false;
+                            app.ui.show_properties = false;
                         }
                     });
                 } else {
                     ui.label("Failed to read file properties");
                     if ui.button("Close").clicked() {
-                        app.show_properties = false;
+                        app.ui.show_properties = false;
                     }
                 }
             });

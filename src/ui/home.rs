@@ -23,7 +23,7 @@ impl HomePage {
         self.show_home = show;
     }
 
-    pub fn render(&mut self, ui: &mut Ui, app: &mut AppState, rt: &Runtime, ctx: &Context) {
+    pub fn render(&mut self, ui: &mut Ui, app: &mut AppState, rt: &Runtime, _ctx: &Context) {
         ScrollArea::vertical().show(ui, |ui| {
             ui.vertical(|ui| {
                 ui.heading("Home");
@@ -49,6 +49,10 @@ impl HomePage {
                                         size: 0,
                                         modified: std::time::SystemTime::now(),
                                         extension: None,
+                                        git_status: None,
+                                        is_symlink: false,
+                                        is_hardlink: false,
+                                        link_target: None,
                                     })
                                 };
                                 
@@ -127,8 +131,8 @@ impl HomePage {
                                                 rt.block_on(app.navigate_to(item.path.clone()));
                                                 self.show_home = false;
                                             } else {
-                                                app.properties_path = Some(item.path.clone());
-                                                app.show_properties = true;
+                                                app.ui.properties_path = Some(item.path.clone());
+                                                app.ui.show_properties = true;
                                             }
                                         }
                                     });
@@ -253,6 +257,10 @@ fn get_recent_items(app: &AppState) -> Vec<crate::fs::directory::FileEntry> {
                     extension: path.extension()
                         .and_then(|e| e.to_str())
                         .map(|s| s.to_string()),
+                    git_status: None,
+                    is_symlink: false,
+                    is_hardlink: false,
+                    link_target: None,
                 });
             }
         }
@@ -275,6 +283,10 @@ fn get_recent_items(app: &AppState) -> Vec<crate::fs::directory::FileEntry> {
                     extension: path.extension()
                         .and_then(|e| e.to_str())
                         .map(|s| s.to_string()),
+                    git_status: None,
+                    is_symlink: false,
+                    is_hardlink: false,
+                    link_target: None,
                 });
             }
         }

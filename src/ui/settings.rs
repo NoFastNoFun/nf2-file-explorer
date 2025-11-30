@@ -12,6 +12,9 @@ pub struct Settings {
     pub recent_folders: Vec<String>,
     pub recent_files: Vec<String>,
     pub favorites: Vec<String>,
+    pub open_tabs: Vec<String>,
+    pub show_ignored_files: bool,
+    pub show_git_status: bool,
 }
 
 impl Default for Settings {
@@ -24,6 +27,9 @@ impl Default for Settings {
             recent_folders: Vec::new(),
             recent_files: Vec::new(),
             favorites: Vec::new(),
+            open_tabs: Vec::new(),
+            show_ignored_files: true,
+            show_git_status: true,
         }
     }
 }
@@ -57,12 +63,12 @@ impl Settings {
     }
 }
 
-pub fn render_settings(ctx: &Context, settings: &mut Settings) {
-    let mut show = true;
+pub fn render_settings(ctx: &Context, settings: &mut Settings, show_settings: &mut bool) {
+    let mut should_close = false;
     Window::new("Settings")
         .collapsible(true)
         .resizable(true)
-        .open(&mut show)
+        .open(show_settings)
         .show(ctx, |ui| {
             ui.vertical(|ui| {
                 ui.heading("Preferences");
@@ -70,6 +76,10 @@ pub fn render_settings(ctx: &Context, settings: &mut Settings) {
                 ui.separator();
 
                 ui.checkbox(&mut settings.show_hidden_files, "Show hidden files");
+                
+                ui.checkbox(&mut settings.show_ignored_files, "Show ignored files (.gitignore)");
+
+                ui.checkbox(&mut settings.show_git_status, "Show git status (may impact performance)");
 
                 ui.separator();
 
@@ -97,12 +107,21 @@ pub fn render_settings(ctx: &Context, settings: &mut Settings) {
 
                 ui.separator();
 
-                if ui.button("Save").clicked() {
-                    if let Err(e) = settings.save() {
-                        eprintln!("Failed to save settings: {}", e);
+                ui.horizontal(|ui| {
+                    if ui.button("Save").clicked() {
+                        if let Err(e) = settings.save() {
+                            eprintln!("Failed to save settings: {}", e);
+                        }
                     }
-                }
+                    if ui.button("Close").clicked() {
+                        should_close = true;
+                    }
+                });
             });
         });
+    
+    if should_close {
+        *show_settings = false;
+    }
 }
 

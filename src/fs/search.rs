@@ -9,6 +9,7 @@ pub struct SearchOptions {
     pub file_only: bool,
     pub dir_only: bool,
     pub global: bool,
+    pub use_regex: bool,
 }
 
 impl Default for SearchOptions {
@@ -20,6 +21,7 @@ impl Default for SearchOptions {
             file_only: false,
             dir_only: false,
             global: false,
+            use_regex: false,
         }
     }
 }
@@ -29,6 +31,21 @@ pub async fn search_directory(
     options: &SearchOptions,
 ) -> Result<Vec<FileEntry>, std::io::Error> {
     let mut results = Vec::new();
+    
+    let regex_pattern = if options.use_regex {
+        let pattern = if options.match_case {
+            options.query.clone()
+        } else {
+            format!("(?i){}", options.query)
+        };
+        match regex::Regex::new(&pattern) {
+            Ok(re) => Some(re),
+            Err(_) => return Ok(Vec::new()),
+        }
+    } else {
+        None
+    };
+    
     let query = if options.match_case {
         options.query.clone()
     } else {
@@ -71,7 +88,13 @@ pub async fn search_directory(
                         name.to_lowercase()
                     };
 
-                    if search_name.contains(&query) {
+                    let matches = if let Some(ref re) = regex_pattern {
+                        re.is_match(&search_name)
+                    } else {
+                        search_name.contains(&query)
+                    };
+
+                    if matches {
                         let file_entry = FileEntry {
                             name: name.to_string(),
                             path: path.to_path_buf(),
@@ -82,6 +105,10 @@ pub async fn search_directory(
                                 .extension()
                                 .and_then(|e| e.to_str())
                                 .map(|s| s.to_string()),
+                            git_status: None,
+                            is_symlink: false,
+                            is_hardlink: false,
+                            link_target: None,
                         };
                         all_results.push(file_entry);
                     }
@@ -116,7 +143,13 @@ pub async fn search_directory(
                 name.to_lowercase()
             };
 
-            if search_name.contains(&query) {
+            let matches = if let Some(ref re) = regex_pattern {
+                re.is_match(&search_name)
+            } else {
+                search_name.contains(&query)
+            };
+
+            if matches {
                 let file_entry = FileEntry {
                     name: name.to_string(),
                     path: path.to_path_buf(),
@@ -127,12 +160,16 @@ pub async fn search_directory(
                         .extension()
                         .and_then(|e| e.to_str())
                         .map(|s| s.to_string()),
+                    git_status: None,
+                    is_symlink: false,
+                    is_hardlink: false,
+                    link_target: None,
                 };
                 results.push(file_entry);
             }
         }
     } else {
-        let entries = crate::fs::directory::list_directory(root).await?;
+        let entries = crate::fs::directory::list_directory(root, None, false).await?;
         for entry in entries {
             let search_name = if options.match_case {
                 entry.name.clone()
@@ -140,7 +177,13 @@ pub async fn search_directory(
                 entry.name.to_lowercase()
             };
 
-            if search_name.contains(&query) {
+            let matches = if let Some(ref re) = regex_pattern {
+                re.is_match(&search_name)
+            } else {
+                search_name.contains(&query)
+            };
+
+            if matches {
                 if options.file_only && entry.is_dir {
                     continue;
                 }

@@ -25,6 +25,15 @@ pub enum FileOperationError {
     
     #[error("Invalid input: {0}")]
     InvalidInput(String),
+    
+    #[error("{0}")]
+    Custom(String),
+}
+
+impl From<String> for FileOperationError {
+    fn from(s: String) -> Self {
+        FileOperationError::Custom(s)
+    }
 }
 
 pub type FileOperationResult<T> = Result<T, FileOperationError>;

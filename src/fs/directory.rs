@@ -13,6 +13,10 @@ pub struct FileEntry {
     pub size: u64,
     pub modified: SystemTime,
     pub extension: Option<String>,
+    pub git_status: Option<crate::fs::git::GitFileStatus>,
+    pub is_symlink: bool,
+    pub is_hardlink: bool,
+    pub link_target: Option<PathBuf>,
 }
 
 impl FileEntry {
@@ -58,7 +62,7 @@ fn format_bytes(bytes: u64) -> String {
 
 #[derive(Clone)]
 struct CacheEntry {
-    entries: Vec<FileEntry>,
+    entries: Arc<Vec<FileEntry>>,
     timestamp: SystemTime,
 }
 
@@ -75,11 +79,11 @@ impl DirectoryCache {
         }
     }
 
-    pub async fn get(&self, path: &Path) -> Option<Vec<FileEntry>> {
+    pub async fn get(&self, path: &Path) -> Option<Arc<Vec<FileEntry>>> {
         let cache = self.cache.read().await;
         if let Some(entry) = cache.get(path) {
             if entry.timestamp.elapsed().unwrap_or(Duration::MAX) < self.ttl {
-                return Some(entry.entries.clone());
+                return Some(Arc::clone(&entry.entries));
             }
         }
         None
@@ -90,7 +94,7 @@ impl DirectoryCache {
         cache.insert(
             path,
             CacheEntry {
-                entries,
+                entries: Arc::new(entries),
                 timestamp: SystemTime::now(),
             },
         );
@@ -107,7 +111,7 @@ impl DirectoryCache {
     }
 }
 
-pub async fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
+pub async fn list_directory(path: &Path, git_manager: Option<&crate::fs::git::GitStatusManager>, show_git_status: bool) -> Result<Vec<FileEntry>, std::io::Error> {
     let mut entries = Vec::new();
 
     let mut dir_entries = tokio::fs::read_dir(path).await?;
@@ -127,6 +131,15 @@ pub async fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Erro
             .and_then(|e| e.to_str())
             .map(|s| s.to_string());
 
+        let is_symlink = metadata.file_type().is_symlink();
+        let link_target = if is_symlink {
+            std::fs::read_link(&entry_path).ok()
+        } else {
+            None
+        };
+        
+        let is_hardlink = false;
+        
         let file_entry = FileEntry {
             name,
             path: entry_path.clone(),
@@ -134,6 +147,10 @@ pub async fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Erro
             size: metadata.len(),
             modified: metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH),
             extension,
+            git_status: None,
+            is_symlink,
+            is_hardlink,
+            link_target,
         };
 
         entries.push(file_entry);
@@ -146,6 +163,12 @@ pub async fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Erro
             _ => a.name.cmp(&b.name),
         }
     });
+
+    if show_git_status {
+        if let Some(manager) = git_manager {
+            manager.batch_get_git_status(&mut entries, path);
+        }
+    }
 
     Ok(entries)
 }
